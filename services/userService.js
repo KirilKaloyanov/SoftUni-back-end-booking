@@ -5,32 +5,41 @@ const User = require("../models/User");
 const JWT_SECRET = "a45oncuv9pje";
 
 //TODO: check what fields are used for identification by assignment
-async function login(username, password) {
-  const user = await User.findOne({ username }).collation({
+async function login(email, password) {
+  const user = await User.findOne({ email }).collation({
     locale: "en",
     strength: 2,
   });
 
-  if (!user) throw new Error("Invalid username or password.");
+  if (!user) throw new Error("Invalid email or password.");
 
   const hasMatch = await bcrypt.compare(password, user.hashedPassword);
-  if (!hasMatch) throw new Error("Invalid username or password.");
+  if (!hasMatch) throw new Error("Invalid email or password.");
 
   return createSession(user);
 }
 
 //TODO: check what fields are used for identification by assignment
-async function register(username, password) {
-  const existing = await User.findOne({ username }).collation({
+async function register(email, username, password) {
+
+  const existingUsername = await User.findOne({ username }).collation({
     locale: "en",
     strength: 2,
   });
 
-  if (existing) throw new Error("Username is taken.");
+  if (existingUsername) throw new Error("Username is taken.");
+
+  const existingEmail = await User.findOne({ email }).collation({
+    locale: "en",
+    strength: 2,
+  });
+
+  if (existingEmail) throw new Error("Email is taken.");
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await User.create({
+    email,
     username,
     hashedPassword,
   });
@@ -41,9 +50,10 @@ async function register(username, password) {
 
 function logout() {}
 
-function createSession({ _id, username }) {
+function createSession({ _id, email, username }) {
   const payload = {
     _id,
+    email,
     username,
   };
 
